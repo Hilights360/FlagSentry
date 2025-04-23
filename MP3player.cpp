@@ -21,13 +21,17 @@ void setupMP3Player() {
 
     // Set up I2S output on I2S1 (secondary peripheral)
     out = new AudioOutputI2S();  // 
-    //******out->SetOutputModeMono(true);   // Mono output = fewer channels = less peripheral use
+    out->SetOutputModeMono(true);   // Mono output = fewer channels = less peripheral use
     out->SetPinout(BCLK_PIN, LRCLK_PIN, DOUT_PIN);
     out->SetGain(0.4);            // Set volume (0.0 to 1.0)
 }
 
 bool isMP3Playing() {
-    return mp3 && mp3->isRunning();
+    if (!mp3) {
+        Serial.println("MP3 object is null.");
+        return false;
+    }
+    return mp3->isRunning();
 }
 
 bool playMP3File(const char *fileName) {

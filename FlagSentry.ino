@@ -3,7 +3,6 @@ Code for full autonomus flag control with WIFI support
 by Tim Nash 2025*/
 // TODO: Implement WiFi tethering functionality for the ESP32 as a server.
 
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -276,13 +275,14 @@ void loop() {
             stopMP3Playback();
         } else {
             handleHTTPCommand(command);
+
         }
     }
     
 
     // Other periodic tasks
     //updateSensorData();
-    serveMyFlagHTML(server,
+    /* Temp Move to get rid of skip serveMyFlagHTML(server,
                     cachedHTML,
                     cachedTimeStr,
                     deviceSerial,
@@ -293,16 +293,29 @@ void loop() {
                     cachedLightCond,
                     currentFlagStatus,
                     flagPosToString);
-    timedUpdates();
+    timedUpdates();*/
     handleFlagPositionUpdates();
     handleMP3Playback();
-    /*if (mp3 && mp3->isRunning()) {
-        Serial.println("🔊 MP3 is running, processing playback...");
-        mp3->loop(); // Process MP3 playback in chunks
-    } else {
-        Serial.println("🛑 MP3 is not running.");
-    }*/
-    delay(10); // Small delay to prevent tight looping
+    if (!mp3 || !mp3->isRunning()){
+       // Serial.println("🔊 MP3 is running, processing playback...");
+       // mp3->loop(); // Process MP3 playback in chunks
+            serveMyFlagHTML(server,
+                    cachedHTML,
+                    cachedTimeStr,
+                    deviceSerial,
+                    cachedTempC,
+                    cachedTempF,
+                    cachedPressure,
+                    cachedLightVal,
+                    cachedLightCond,
+                    currentFlagStatus,
+                    flagPosToString);
+             timedUpdates();
+        } else {
+            Serial.println("MP3 is playing, deferring SD card logging.");
+       }
+    
+    //delay(10); // Small delay to prevent tight looping
 }
 
 void handleMP3Command(const String& command) {
@@ -379,11 +392,7 @@ void timedUpdates() {
   
   if (currentMillis - lastSDUpdate >= sdUpdateIntervalMin * 60000UL) {
     lastSDUpdate = currentMillis;
-    if (!isMP3Playing()) {
-      logToSDCard();
-    } else {
-      Serial.println("MP3 is playing, deferring SD card logging.");
-    }
+    logToSDCard();
   }
   
   if (currentMillis - lastServerUpdate >= serverUpdateIntervalMin * 60000UL) {
