@@ -67,8 +67,12 @@ void handleMP3Playback() {
 }
 void stopMP3Playback() {
     if (mp3 && mp3->isRunning()) {
+        Serial.println("Stopping MP3 playback...");
         mp3->stop();
         delete mp3;
         mp3 = nullptr;
+        Serial.println("MP3 playback stopped successfully.");
+    } else {
+        Serial.println("No MP3 playback to stop.");
     }
 }

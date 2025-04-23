@@ -282,19 +282,7 @@ void loop() {
     
 
     // Other periodic tasks
-    //updateSensorData();
-    /* Temp Move to get rid of skip serveMyFlagHTML(server,
-                    cachedHTML,
-                    cachedTimeStr,
-                    deviceSerial,
-                    cachedTempC,
-                    cachedTempF,
-                    cachedPressure,
-                    cachedLightVal,
-                    cachedLightCond,
-                    currentFlagStatus,
-                    flagPosToString);
-    timedUpdates();*/
+    updateSensorData();
     handleFlagPositionUpdates();
     handleMP3Playback();
     if (!mp3 || !mp3->isRunning()){
@@ -319,6 +307,8 @@ void loop() {
     //delay(10); // Small delay to prevent tight looping
 }
 
+
+//**************************************************************************END OF MAIN LOOP **********************************************************************
 void handleMP3Command(const String& command) {
     if (command.startsWith("play ")) {
         String fileName = command.substring(5); // Extract the filename
@@ -380,12 +370,12 @@ float getTotalPSRAMKB() {
 
 //Sensor Data 
 void updateSensorData() {
+  cachedTimeStr = getFormattedTime();
   cachedTempC = bmp280.readTemperature();
   cachedTempF = cachedTempC * 1.8 + 32;
   cachedPressure = bmp280.readPressure() / 100.0F;
-  cachedLightVal = digitalRead(PHOTOCELL_PIN);
+  cachedLightVal = digitalRead(PHOTOCELL_PIN);     // Read the photocell value
   cachedLightCond = (cachedLightVal < 2048) ? "Light" : "Dark";
-  cachedTimeStr = getFormattedTime();
 }
 
 void timedUpdates() {
