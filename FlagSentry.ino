@@ -1,6 +1,7 @@
 /*Flag Sentry V1
 Code for full autonomus flag control with WIFI support
-by Tim Nash 2025*/
+by Tim Nash 2025
+Updates 4/23/25*/
 // TODO: Implement WiFi tethering functionality for the ESP32 as a server.
 
 #include <Arduino.h>
