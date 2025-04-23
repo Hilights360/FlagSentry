@@ -286,8 +286,6 @@ void loop() {
     handleFlagPositionUpdates();
     handleMP3Playback();
     if (!mp3 || !mp3->isRunning()){
-       // Serial.println("🔊 MP3 is running, processing playback...");
-       // mp3->loop(); // Process MP3 playback in chunks
             serveMyFlagHTML(server,
                     cachedHTML,
                     cachedTimeStr,
@@ -309,12 +307,14 @@ void loop() {
 
 
 //**************************************************************************END OF MAIN LOOP **********************************************************************
+
+
 void handleMP3Command(const String& command) {
     if (command.startsWith("play ")) {
         String fileName = command.substring(5); // Extract the filename
-        fileName.trim();
+        fileName.trim();  //Trim whitespace
 
-        if (!fileName.startsWith("/")) {
+        if (!fileName.startsWith("/")) {  // Make root
             fileName = "/" + fileName; // Ensure leading slash
         }
 
@@ -375,7 +375,7 @@ void updateSensorData() {
   cachedTempF = cachedTempC * 1.8 + 32;
   cachedPressure = bmp280.readPressure() / 100.0F;
   cachedLightVal = digitalRead(PHOTOCELL_PIN);     // Read the photocell value
-  cachedLightCond = (cachedLightVal < 2048) ? "Light" : "Dark";
+  cachedLightCond = (cachedLightVal < 1 ) ? "Light" : "Dark";
 }
 
 void timedUpdates() {

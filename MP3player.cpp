@@ -60,11 +60,17 @@ bool playMP3File(const char *fileName) {
     Serial.printf("🎵 Playing '%s'...\n", fileName);
     return true; // Return true to indicate playback successfully started
 }
+
+
 void handleMP3Playback() {
     if (mp3 && mp3->isRunning()) {
-        mp3->loop();
+        mp3->loop(); // Continue MP3 playback
+    } else {
+        stopMP3Playback(); // Stop playback if MP3 is not running
     }
 }
+
+
 void stopMP3Playback() {
     if (mp3 && mp3->isRunning()) {
         Serial.println("Stopping MP3 playback...");
@@ -72,7 +78,5 @@ void stopMP3Playback() {
         delete mp3;
         mp3 = nullptr;
         Serial.println("MP3 playback stopped successfully.");
-    } else {
-        Serial.println("No MP3 playback to stop.");
-    }
+    } 
 }
