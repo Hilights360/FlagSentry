@@ -18,6 +18,7 @@ Updates 4/23/25*/
 #include "esp_heap_caps.h" // Include this header for heap_caps_get_free_size
 #include "MP3Player.h"
 
+
 WiFiServer server(80);
 
 #ifndef NDEBUG
@@ -284,8 +285,13 @@ void loop() {
     // Other periodic tasks
     updateSensorData();
     handleFlagPositionUpdates();
-    handleMP3Playback();
-    if (!mp3 || !mp3->isRunning()){
+    isMP3Playing();
+    //handleMP3Playback();
+    if (mp3 && mp3->isRunning()){
+           // Serial.println("MP3 is playing, deferring SD card logging."); 
+            handleMP3Playback();
+            
+        } else {
             serveMyFlagHTML(server,
                     cachedHTML,
                     cachedTimeStr,
@@ -297,10 +303,8 @@ void loop() {
                     cachedLightCond,
                     currentFlagStatus,
                     flagPosToString);
-             timedUpdates();
-        } else {
-            Serial.println("MP3 is playing, deferring SD card logging.");
-       }
+             timedUpdates();     
+        }
     
     //delay(10); // Small delay to prevent tight looping
 }

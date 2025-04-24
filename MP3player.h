@@ -6,15 +6,16 @@ Tim Nash 2025**/
 #include <AudioFileSourceSD.h>
 #include <AudioOutputI2S.h>
 
-//#include <AudioFileSourceSD.h>
-//#include <AudioGeneratorMP3.h>
-//#include <AudioOutputI2S.h>
+
+// Declare MP3-related global variables
+extern AudioGeneratorMP3 *mp3;
+extern AudioFileSourceSD *file;
+extern AudioOutputI2S *out;
 
 
 #define DOUT_PIN 4  // Data Out (DIN on MAX98357)
 #define BCLK_PIN 14  // Bit Clock (BCLK on MAX98357)
 #define LRCLK_PIN 13 // Left/Right Clock (LRCLK on MAX98357)
-
 
 
 // Function Declarations

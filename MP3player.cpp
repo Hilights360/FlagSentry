@@ -1,20 +1,9 @@
 #include "MP3player.h"
-#include <AudioGeneratorMP3.h>
-#include <AudioFileSourceSD.h>
-#include <AudioOutputI2S.h>
+//#include <AudioGeneratorMP3.h>
+//#include <AudioFileSourceSD.h>
+//#include <AudioOutputI2S.h>
 //#include <Audio.h>
 
-// Declare MP3-related global variables
-extern AudioGeneratorMP3 *mp3;
-extern AudioFileSourceSD *file;
-extern AudioOutputI2S *out;
-
-// Declare MP3 player functions
-void setupMP3Player();
-bool playMP3File(const char *fileName);
-void stopMP3Playback();
-bool isMP3Playing();
-void handleMP3Playback();
 
 
 void setupMP3Player() {
@@ -63,6 +52,13 @@ bool playMP3File(const char *fileName) {
 
 
 void handleMP3Playback() {
+    if (mp3) { // Ensure mp3 is not null
+        Serial.print("isRunning value: ");
+        Serial.println(mp3->isRunning()); // Debugging output for isRunning
+    } else {
+        Serial.println("mp3 object is null.");
+    }
+
     if (mp3 && mp3->isRunning()) {
         mp3->loop(); // Continue MP3 playback
     } else {

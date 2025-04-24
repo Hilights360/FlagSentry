@@ -1,6 +1,5 @@
-#include <WiFi.h>
 #include "myFlag.h"
-#include "globals.h" // Include any global shared variables like cachedHTML etc.
+
 
 // Assume `server`, `cachedHTML`, `cachedTimeStr`, etc., are defined as `extern` in Globals.h
 
