@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "MotorControl.h"
+#include "esp32-hal-ledc.h"  // <-- ADD THIS!
 
 // Motor Control Variables
 bool moving = false;
@@ -21,9 +22,9 @@ void setupMotor() {
     pinMode(ESTOP_PIN, INPUT_PULLUP);
     pinMode(MAG_SENSOR_PIN, INPUT_PULLUP);
 
-    // *** Correct PWM Setup for ESP32 Arduino ***
-    ledcSetup(0, 5000, 8);        // PWM Channel 0, 5kHz, 8-bit resolution
-    ledcAttachPin(ENA_PIN, 0);    // Attach ENA_PIN to PWM Channel 0
+    // PWM setup for ENA_PIN
+    ledcSetup(0, 5000, 8);       // PWM Channel 0, 5kHz, 8-bit resolution
+    ledcAttachPin(ENA_PIN, 0);   // Attach ENA_PIN to PWM Channel 0
 
     stopMotor();
     resetMotorPosition();
@@ -100,7 +101,7 @@ void updateMotorMovement() {
                 currentPWM = targetPWM;
                 softStarting = false;
             }
-            ledcWrite(0, currentPWM); // Apply updated PWM
+            ledcWrite(0, currentPWM); // <-- Critical! Update PWM output here
         }
     }
 

@@ -4,6 +4,7 @@
 #include "flagpos.h"
 #include "globals.h" // Include any global shared variables like cachedHTML etc.
 
+typedef WiFiServer NetworkServer;
 
 void serveMyFlagHTML(NetworkServer& server,
                      const String& htmlTemplate,

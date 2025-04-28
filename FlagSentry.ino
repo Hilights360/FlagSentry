@@ -90,7 +90,7 @@ String cachedTimeStr = "";
 // === Function Declarations ===
 String getESP32SerialNumber();
 void updateSensorData();
-void serveMyFlagHTML();
+//void serveMyFlagHTML();
 void timedUpdates();
 void checkHttpflagStatus();
 String getFormattedTime();

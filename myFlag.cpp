@@ -1,4 +1,6 @@
+#include <WiFi.h>   // <-- ADD THIS LINE
 #include "myFlag.h"
+#include "flagpos.h"
 
 
 // Assume `server`, `cachedHTML`, `cachedTimeStr`, etc., are defined as `extern` in Globals.h
