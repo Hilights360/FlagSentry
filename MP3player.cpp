@@ -1,3 +1,4 @@
+/*MP3player.cpp by Tim Nash not for distribution */
 #include "MP3player.h"
 
 // Define global MP3 player objects
@@ -51,6 +52,7 @@ bool playMP3File(const char *fileName) {
     }
 
     // Log successful playback
+    playbackStartTime = millis();  // <-- IMPORTANT, starts 2min timer
     Serial.printf("🎵 Playing '%s'...\n", fileName);
     return true; // Return true to indicate playback successfully started
 }
@@ -64,25 +66,24 @@ void handleMP3Playback() {
         } else {
             mp3->loop(); // Continue playback
         }
-    } else {
-        stopMP3Playback();
-    }
+    } 
 }
 
 
-
 void stopMP3Playback() {
-    if (mp3 && mp3->isRunning()) {
-        mp3->stop();
+    if (mp3) {
+        if (mp3->isRunning()) {
+            mp3->stop();
+        }
+        delete mp3;
+        mp3 = nullptr;
     }
 
-    if (file) delete file;
-    if (out) delete out;
+    if (file) {
+        delete file;
+        file = nullptr;
+    }
 
-    mp3 = nullptr;
-    file = nullptr;
-    out = nullptr;
-
-    playbackStartTime = 0; // Reset the timer
+    playbackStartTime = 0; // Reset timer
     Serial.println("MP3 playback stopped.");
-}    
+}   

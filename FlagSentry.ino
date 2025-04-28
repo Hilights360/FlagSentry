@@ -287,9 +287,6 @@ void loop() {
     handleFlagPositionUpdates();
    
     //handleMP3Playback();
-    if (mp3player.isRunning()) {
-        mp3player.update();  // <-- this MUST be called to decode
-    }
     if (mp3 && mp3->isRunning()){
            // Serial.println("MP3 is playing, deferring SD card logging."); 
             handleMP3Playback();
