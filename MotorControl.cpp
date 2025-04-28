@@ -1,177 +1,129 @@
+#include <Arduino.h>
 #include "MotorControl.h"
 
+// Motor Control Variables
+bool moving = false;
+int targetRevolutions = 0;
+int revolutions = 0;
+unsigned long lastMagSensorCheck = 0;
+bool lastMagSensorState = false;
+String currentStatus = "Idle";
+
+// *** Added for Soft Start ***
 int currentPWM = 0;
 int targetPWM = MOTOR_SPEED;
 unsigned long lastPWMUpdate = 0;
 bool softStarting = false;
 
-
-// Global variables for motor control
-volatile int revCounter = 0;
-bool moving = false;
-bool moveUp = true;
-int currentTarget = 0;
-unsigned long lastMotorUpdate = 0;
-const unsigned long MOTOR_UPDATE_INTERVAL = 100; // Check motor status every 100ms
-
-// Interrupt handler for magnetic sensor pulses
-void IRAM_ATTR handleMagPulse() {
-    // Fix for volatile warning
-    int currentCount = revCounter;
-    revCounter = currentCount + 1;
-}
-
 void setupMotor() {
-    // Configure motor control pins
-    pinMode(ENA_PIN, OUTPUT);
     pinMode(IN1_PIN, OUTPUT);
     pinMode(IN2_PIN, OUTPUT);
     pinMode(ESTOP_PIN, INPUT_PULLUP);
     pinMode(MAG_SENSOR_PIN, INPUT_PULLUP);
 
-    // Attach interrupt for magnetic sensor
-    attachInterrupt(digitalPinToInterrupt(MAG_SENSOR_PIN), handleMagPulse, RISING);
-    
-    //Setup Softstart
-    currentPWM = 0;
-    targetPWM = MOTOR_SPEED;
-    lastPWMUpdate = 0;
-    softStarting = false;
+    // *** Correct PWM Setup for ESP32 Arduino ***
+    ledcSetup(0, 5000, 8);        // PWM Channel 0, 5kHz, 8-bit resolution
+    ledcAttachPin(ENA_PIN, 0);    // Attach ENA_PIN to PWM Channel 0
 
-    // Initialize motor in stopped state
     stopMotor();
-    Serial.println("✅ Motor setup complete");
-    
-    // Initial position report
-    Serial.printf("Initial position: %d revolutions\n", revCounter);
+    resetMotorPosition();
 }
 
 void setMotorForward(uint8_t speed) {
     digitalWrite(IN1_PIN, HIGH);
     digitalWrite(IN2_PIN, LOW);
-    analogWrite(ENA_PIN, speed);
-    Serial.printf("🔼 Motor moving forward at speed %d\n", speed);
+    ledcWrite(0, speed);
+    currentStatus = "Moving Forward";
 }
 
 void setMotorReverse(uint8_t speed) {
     digitalWrite(IN1_PIN, LOW);
     digitalWrite(IN2_PIN, HIGH);
-    analogWrite(ENA_PIN, speed);
-    Serial.printf("🔽 Motor moving reverse at speed %d\n", speed);
+    ledcWrite(0, speed);
+    currentStatus = "Moving Reverse";
 }
 
 void stopMotor() {
     digitalWrite(IN1_PIN, LOW);
     digitalWrite(IN2_PIN, LOW);
-    analogWrite(ENA_PIN, 0);
+    ledcWrite(0, 0);
     moving = false;
-    Serial.println("⏹️ Motor stopped");
+    softStarting = false; // *** Added for Soft Start ***
+    currentStatus = "Stopped";
 }
 
 void checkEStop() {
     if (digitalRead(ESTOP_PIN) == LOW) {
         stopMotor();
-        moving = false;
-        Serial.println("🛑 E-STOP Triggered!");
+        Serial.println("!!! Emergency Stop Activated !!!");
     }
 }
 
 void moveToPosition(String position) {
-    // Don't start a new movement if already moving
-    if (moving) {
-        Serial.println("⚠️ Motor already moving, command ignored");
-        return;
-    }
-    //Setup Softstart
-    currentPWM = 0;
-    targetPWM = MOTOR_SPEED;
-    softStarting = true;
-
-    // Calculate target position
-    int newTarget;
     if (position == "FULL") {
-        newTarget = REV_FULL;
+        targetRevolutions = REV_FULL;
     } else if (position == "HALF") {
-        newTarget = REV_HALF;
+        targetRevolutions = REV_HALF;
     } else if (position == "DOWN") {
-        newTarget = REV_DOWN;
+        targetRevolutions = REV_DOWN;
     } else {
-        Serial.printf("❌ Invalid position command: %s\n", position.c_str());
+        Serial.println("Unknown Position Requested");
         return;
     }
 
-    // Set movement parameters
-    currentTarget = newTarget;
-    moveUp = (revCounter < currentTarget);
-    moving = true;
-
-    // Start motor movement
-    if (moveUp) {
-        setMotorForward(MOTOR_SPEED);
+    if (targetRevolutions > revolutions) {
+        setMotorForward(0); // Start with 0 speed for soft start
+    } else if (targetRevolutions < revolutions) {
+        setMotorReverse(0); // Start with 0 speed for soft start
     } else {
-        setMotorReverse(MOTOR_SPEED);
+        Serial.println("Already at Target Position");
+        return;
     }
 
-    // Log movement details
-    Serial.printf("🎯 Moving to %s position (Target: %d revs, Current: %d revs, Direction: %s)\n", 
-                 position.c_str(), currentTarget, revCounter, moveUp ? "UP" : "DOWN");
+    moving = true;
+    softStarting = true;            // *** Added for Soft Start ***
+    currentPWM = 0;                 // Start ramp from 0
+    targetPWM = MOTOR_SPEED;        // Ramp target
+    lastPWMUpdate = millis();       // Initialize timer
 }
 
 void updateMotorMovement() {
-    unsigned long currentMillis = millis();
-    
-    // Only update at specified intervals
-    if (currentMillis - lastMotorUpdate < MOTOR_UPDATE_INTERVAL) {
-        return;
-    }
-    lastMotorUpdate = currentMillis;
+    if (!moving) return;
 
-    //Check if there has been a softstart
+    // *** Soft Start PWM Ramping ***
     if (softStarting) {
-    unsigned long now = millis();
-    if (now - lastPWMUpdate > 20) { // ramp every 20ms
-        lastPWMUpdate = now;
-        currentPWM += 5; // ramp by 5 each time
-        if (currentPWM >= targetPWM) {
-            currentPWM = targetPWM;
-            softStarting = false;
+        unsigned long now = millis();
+        if (now - lastPWMUpdate >= 20) { // Update every 20ms
+            lastPWMUpdate = now;
+            currentPWM += 5; // Increase PWM slowly
+            if (currentPWM >= targetPWM) {
+                currentPWM = targetPWM;
+                softStarting = false;
+            }
+            ledcWrite(0, currentPWM); // Apply updated PWM
         }
-        // Write the ramped PWM to motor
-        ledcWrite(0, currentPWM); // Assuming channel 0 for ENA
+    }
+
+    // Update motor revolutions
+    bool magSensorState = digitalRead(MAG_SENSOR_PIN) == LOW;
+    if (magSensorState && !lastMagSensorState) {
+        revolutions++;
+        Serial.printf("Revolutions: %d\n", revolutions);
+    }
+    lastMagSensorState = magSensorState;
+
+    // Check if target reached
+    if (revolutions >= targetRevolutions) {
+        stopMotor();
     }
 }
 
-    // If not moving, nothing to update
-    if (!moving) {
-        return;
-    }
-
-    // Check emergency stop first
-    checkEStop();
-    if (!moving) { // If E-stop triggered, exit
-        return;
-    }
-
-    // Check if we've reached the target
-    bool reachedTarget = false;
-    if (moveUp && revCounter >= currentTarget) {
-        reachedTarget = true;
-        Serial.println("✅ Reached upper target position");
-    }
-    else if (!moveUp && revCounter <= currentTarget) {
-        reachedTarget = true;
-        Serial.println("✅ Reached lower target position");
-    }
-
-    // Stop motor if target reached
-    if (reachedTarget) {
-        stopMotor();
-        Serial.printf("📍 Final position: %d revolutions\n", revCounter);
-    }
+void resetMotorPosition() {
+    revolutions = 0;
 }
 
 int getCurrentPosition() {
-    return revCounter;
+    return revolutions;
 }
 
 bool isMoving() {
@@ -179,12 +131,5 @@ bool isMoving() {
 }
 
 String getMotorStatus() {
-    char status[100];
-    snprintf(status, sizeof(status), 
-             "Moving: %s, Direction: %s, Position: %d, Target: %d", 
-             moving ? "YES" : "NO",
-             moveUp ? "UP" : "DOWN",
-             revCounter,
-             currentTarget);
-    return String(status);
+    return currentStatus;
 }
