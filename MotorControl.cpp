@@ -5,7 +5,6 @@
 // Motor Control Variables
 bool moving = false;
 int targetRevolutions = 0;
-int revolutions = 0;
 unsigned long lastMagSensorCheck = 0;
 bool lastMagSensorState = false;
 String currentStatus = "Idle";
@@ -16,15 +15,23 @@ int targetPWM = MOTOR_SPEED;
 unsigned long lastPWMUpdate = 0;
 bool softStarting = false;
 
+// === Interrupt Service Routine for Magnetic Sensor ===
+volatile int revolutions = 0;  // Must be volatile because it's used in ISR
+
+void IRAM_ATTR magnetPulseISR() {
+    revolutions++;
+}
+
 void setupMotor() {
     pinMode(IN1_PIN, OUTPUT);
     pinMode(IN2_PIN, OUTPUT);
     pinMode(ESTOP_PIN, INPUT_PULLUP);
     pinMode(MAG_SENSOR_PIN, INPUT_PULLUP);
 
-    // PWM setup for ENA_PIN
-    ledcSetup(0, 5000, 8);       // PWM Channel 0, 5kHz, 8-bit resolution
-    ledcAttachPin(ENA_PIN, 0);   // Attach ENA_PIN to PWM Channel 0
+    attachInterrupt(digitalPinToInterrupt(MAG_SENSOR_PIN), magnetPulseISR, FALLING);  // <-- NEW LINE
+
+    ledcSetup(0, 5000, 8);       // PWM setup
+    ledcAttachPin(ENA_PIN, 0);
 
     stopMotor();
     resetMotorPosition();
@@ -91,46 +98,35 @@ void moveToPosition(String position) {
 void updateMotorMovement() {
     if (!moving) return;
 
-    // *** Soft Start PWM Ramping ***
-    if (softStarting) {
-        unsigned long now = millis();
-        if (now - lastPWMUpdate >= 20) { // Update every 20ms
-            lastPWMUpdate = now;
-            currentPWM += 5; // Increase PWM slowly
-            if (currentPWM >= targetPWM) {
-                currentPWM = targetPWM;
-                softStarting = false;
-            }
-            ledcWrite(0, currentPWM); // <-- Critical! Update PWM output here
-        }
-    }
-
-    // Update motor revolutions
-    bool magSensorState = digitalRead(MAG_SENSOR_PIN) == LOW;
+    // === Revolution Counting Always Active ===
+    // Update motor revolutions by reading magnetic sensor
+    /*bool magSensorState = digitalRead(MAG_SENSOR_PIN) == LOW;
     if (magSensorState && !lastMagSensorState) {
         revolutions++;
         Serial.printf("Revolutions: %d\n", revolutions);
     }
-    lastMagSensorState = magSensorState;
+    lastMagSensorState = magSensorState;*/  //Removed for testing of interrupt style pulse count
 
-    // Check if target reached
+    // === Soft Start PWM Ramping ===
+    if (softStarting) {
+        unsigned long now = millis();
+        if (now - lastPWMUpdate >= 10) { // *** Changed: faster update every 10ms instead of 20ms ***
+            lastPWMUpdate = now;
+            currentPWM += 10;             // *** Changed: faster ramp-up +10 instead of +5 each step ***
+            if (currentPWM >= targetPWM) {
+                currentPWM = targetPWM;
+                softStarting = false;
+            }
+            ledcWrite(0, currentPWM); // Update PWM duty cycle
+        }
+    }
+
+    // === Target Revolution Check ===
+    // Check if target revolutions reached
     if (revolutions >= targetRevolutions) {
         stopMotor();
     }
 }
-
-void resetMotorPosition() {
-    revolutions = 0;
-}
-
-int getCurrentPosition() {
-    return revolutions;
-}
-
-bool isMoving() {
-    return moving;
-}
-
-String getMotorStatus() {
-    return currentStatus;
+    void resetMotorPosition() {
+        revolutions = 0;
 }
