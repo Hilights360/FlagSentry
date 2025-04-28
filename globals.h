@@ -26,7 +26,7 @@ extern FlagPosition targetFlagStatus;
 extern bool autoModeEnabled;
 
 // URLs
-extern String flagStatusUrl;
+//extern String flagStatusUrl;
 extern String postDataUrl;
 
 // Timing intervals

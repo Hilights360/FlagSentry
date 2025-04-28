@@ -1,7 +1,9 @@
 #pragma once
-#include "flagpos.h"
+
 #include <WiFi.h>
+#include "flagpos.h"
 #include "globals.h" // Include any global shared variables like cachedHTML etc.
+
 
 void serveMyFlagHTML(NetworkServer& server,
                      const String& htmlTemplate,
@@ -14,4 +16,3 @@ void serveMyFlagHTML(NetworkServer& server,
                      const String& lightCond,
                      FlagPosition flagStatus,
                      const char* (*flagToString)(FlagPosition));
-

@@ -6,12 +6,22 @@ Tim Nash 2025**/
 #include <AudioFileSourceSD.h>
 #include <AudioOutputI2S.h>
 
+class MP3player {
+public:
+    MP3player();
+    void begin();
+    void play(const char* filename);
+    void stop();
+    bool isRunning();
+};
 
 // Declare MP3-related global variables
 extern AudioGeneratorMP3 *mp3;
 extern AudioFileSourceSD *file;
 extern AudioOutputI2S *out;
 
+// Declare the playback timer as extern
+extern unsigned long playbackStartTime;
 
 #define DOUT_PIN 4  // Data Out (DIN on MAX98357)
 #define BCLK_PIN 14  // Bit Clock (BCLK on MAX98357)

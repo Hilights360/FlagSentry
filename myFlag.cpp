@@ -2,7 +2,6 @@
 
 
 // Assume `server`, `cachedHTML`, `cachedTimeStr`, etc., are defined as `extern` in Globals.h
-
 void serveMyFlagHTML(NetworkServer& server,
                      const String& htmlTemplate,
                      const String& timeStr,

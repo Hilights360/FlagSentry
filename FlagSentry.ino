@@ -16,14 +16,17 @@ Updates 4/23/25*/
 #include "MotorControl.h" // Include motor control and Flag position headers.
 #include "flagpos.h" //Flag position Main.
 #include "esp_heap_caps.h" // Include this header for heap_caps_get_free_size
-#include "MP3Player.h"
+#include "MP3player.h"
 
 
+// WIFI Server Port
 WiFiServer server(80);
 
 #ifndef NDEBUG
 #define NDEBUG
 #endif
+
+
 // === Pin Definitions for sensors ===
 #define PHOTOCELL_PIN 36   // ADC input for the photocell
 #define SDA_PIN 21         // BMP280 Sensor Pins I2C SDA
@@ -47,19 +50,15 @@ WiFiServer server(80);
 // === WiFi Credentials and Server URLs ===
 const char* ssid = "COILighting";
 const char* password = "@@CoIIoT";
+
+//======   URL File Links  ============= 
 const char* dataUploadUrl = "http://flagsentry.com/save_data.php";
 const char* flagStatusUrl = "http://flagsentry.com/flagstatus.txt";
 const char* flagCommandsUrl = "http://flagsentry.com/flagcommand.csv";
 
 // === Global Objects ===
 Adafruit_BMP280 bmp280;  // Create Adafruit BMP280 object
-//BMP280 bmp280;
 String deviceSerial = "";
-
-// Declare global MP3 player objects
-AudioGeneratorMP3 *mp3 = nullptr;
-AudioFileSourceSD *file = nullptr;
-AudioOutputI2S *out = nullptr;
 
 
 // === Timing intervals (minutes/seconds) ===
@@ -68,24 +67,25 @@ const unsigned int serverUpdateIntervalMin = 2;    // Upload sensor data every 2
 const unsigned int flagCheckIntervalMin    = 1;    // Check flag status every 1 minute
 const unsigned int serialDebugIntervalSec  = 10;   // Serial debug every 10 seconds
 
+
 // === Timing Variables (in millis) ===
 unsigned long lastSDUpdate     = 0;
 unsigned long lastServerUpdate = 0;
 unsigned long lastFlagCheck    = 0;
 unsigned long lastSerialDebug  = 0;
 
-// === Cached Sensor Data and HTML content ===
+// === Cached Sensor Data, Memory and HTML content ===
 String cachedHTML;
 float cachedTempC = 0.0;
 float cachedTempF = 0.0;
 float cachedPressure = 0.0;
-int cachedLightVal = 0;
-String cachedLightCond = "";
-String cachedTimeStr = "";
 float getFreeHeapKB();
 float getTotalHeapKB();
 float getFreePSRAMKB();
 float getTotalPSRAMKB();
+int cachedLightVal = 0;
+String cachedLightCond = "";
+String cachedTimeStr = "";
 
 // === Function Declarations ===
 String getESP32SerialNumber();
@@ -285,11 +285,15 @@ void loop() {
     // Other periodic tasks
     updateSensorData();
     handleFlagPositionUpdates();
-    isMP3Playing();
+   
     //handleMP3Playback();
+    if (mp3player.isRunning()) {
+        mp3player.update();  // <-- this MUST be called to decode
+    }
     if (mp3 && mp3->isRunning()){
            // Serial.println("MP3 is playing, deferring SD card logging."); 
             handleMP3Playback();
+            
             
         } else {
             serveMyFlagHTML(server,
@@ -324,17 +328,17 @@ void handleMP3Command(const String& command) {
 
         Serial.println("Attempting to find file: [" + fileName + "]");
         if (SD.exists(fileName.c_str())) {
-            Serial.println("✅ File found! Attempting to play...");
+            Serial.println("✅ handleMP3Command File found! Attempting to play...");
         } else {
-            Serial.println("❌ File not found on SD card: " + fileName);
+            Serial.println("❌ handleMP3Command File not found on SD card: " + fileName);
             listFiles();  // Show what *is* on SD
         }
 
         if (!playMP3File(fileName.c_str())) {
-            Serial.println("❌ Failed to play the MP3 file.");
+            Serial.println("❌ handleMP3Command Failed to play the MP3 file.");
         }
     } else {
-        Serial.println("Invalid MP3 command.");
+        Serial.println("handleMP3Command Invalid MP3 command.");
     }
 }
 
