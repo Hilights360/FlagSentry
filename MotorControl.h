@@ -32,3 +32,7 @@ extern volatile int revCounter;
 extern bool moving;
 extern bool moveUp;
 extern int currentTarget;
+extern int currentPWM;          // current PWM duty
+extern int targetPWM;           // where we want to ramp to
+extern unsigned long lastPWMUpdate; // last time we updated PWM
+extern bool softStarting;       // whether we are in soft start phase

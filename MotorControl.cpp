@@ -1,5 +1,11 @@
 #include "MotorControl.h"
 
+int currentPWM = 0;
+int targetPWM = MOTOR_SPEED;
+unsigned long lastPWMUpdate = 0;
+bool softStarting = false;
+
+
 // Global variables for motor control
 volatile int revCounter = 0;
 bool moving = false;
@@ -26,6 +32,12 @@ void setupMotor() {
     // Attach interrupt for magnetic sensor
     attachInterrupt(digitalPinToInterrupt(MAG_SENSOR_PIN), handleMagPulse, RISING);
     
+    //Setup Softstart
+    currentPWM = 0;
+    targetPWM = MOTOR_SPEED;
+    lastPWMUpdate = 0;
+    softStarting = false;
+
     // Initialize motor in stopped state
     stopMotor();
     Serial.println("✅ Motor setup complete");
@@ -70,6 +82,10 @@ void moveToPosition(String position) {
         Serial.println("⚠️ Motor already moving, command ignored");
         return;
     }
+    //Setup Softstart
+    currentPWM = 0;
+    targetPWM = MOTOR_SPEED;
+    softStarting = true;
 
     // Calculate target position
     int newTarget;
@@ -109,6 +125,21 @@ void updateMotorMovement() {
         return;
     }
     lastMotorUpdate = currentMillis;
+
+    //Check if there has been a softstart
+    if (softStarting) {
+    unsigned long now = millis();
+    if (now - lastPWMUpdate > 20) { // ramp every 20ms
+        lastPWMUpdate = now;
+        currentPWM += 5; // ramp by 5 each time
+        if (currentPWM >= targetPWM) {
+            currentPWM = targetPWM;
+            softStarting = false;
+        }
+        // Write the ramped PWM to motor
+        ledcWrite(0, currentPWM); // Assuming channel 0 for ENA
+    }
+}
 
     // If not moving, nothing to update
     if (!moving) {
