@@ -10,13 +10,12 @@ AudioOutputI2S *out = nullptr;
 unsigned long playbackStartTime = 0;
 
 void setupMP3Player() {
-
     // Set up I2S output on I2S1 (secondary peripheral)
-    out = new AudioOutputI2S();  // 
+    out = new AudioOutputI2S();  
     out->SetOutputModeMono(true);   // Mono output = fewer channels = less peripheral use
     out->SetPinout(BCLK_PIN, LRCLK_PIN, DOUT_PIN);
-    out->SetGain(0.4);            // Set volume (0.0 to 1.0)
-    //mp3 = new AudioGeneratorMP3();
+    out->SetGain(0.4);              // Set volume (0.0 to 1.0)
+    // mp3 = new AudioGeneratorMP3(); // (left commented as you had it)
     file = nullptr;
 }
 
@@ -29,21 +28,22 @@ bool isMP3Playing() {
 }
 
 bool playMP3File(const char *fileName) {
-    //stopMP3Playback(); // Stop any existing playback
+    // stopMP3Playback(); // Stop any existing playback
     Serial.println("Jumped to playMP3File \n");
-    
+
+        // Stop any existing playback first
+    stopMP3Playback();
 
     // Check if the file exists
     if (!SD.exists(fileName)) {
         Serial.printf("playMP3File Failed to find: %s\n", fileName);
         return false; // Return false if the file does not exist
     }
+
     // Reinitialize necessary components
-    // Set up MP3 file source
     file = new AudioFileSourceSD(fileName);
-    // Set up MP3 decoder
     mp3 = new AudioGeneratorMP3();
-    //out = new AudioOutputI2S();
+    // out = new AudioOutputI2S(); // (left commented as you had it)
 
     // Begin playback
     if (!mp3->begin(file, out)) { // Check if mp3->begin() fails
@@ -51,22 +51,25 @@ bool playMP3File(const char *fileName) {
         return false; // Return false if playback initialization fails
     }
 
+    // Start the 2-minute timer
+    playbackStartTime = millis(); // <-- IMPORTANT: start timing when playback begins
+
     // Log successful playback
-    playbackStartTime = millis();  // <-- IMPORTANT, starts 2min timer
     Serial.printf("🎵 Playing '%s'...\n", fileName);
     return true; // Return true to indicate playback successfully started
 }
 
-
 void handleMP3Playback() {
-    if (mp3 && mp3->isRunning()) {
-        if (millis() - playbackStartTime >= 120000) { // 2-minute timer
-            Serial.println("2-minute timer reached. Stopping playback.");
+    if (mp3) {
+        bool stillRunning = mp3->loop(); // <-- capture the result of loop()
+
+      //  Serial.println("handleMP3Playback: loop returned " + String(stillRunning) + ", isRunning = " + String(mp3->isRunning()));
+
+        if (!stillRunning) {
+            Serial.println("MP3 loop() ended. Stopping playback.");
             stopMP3Playback();
-        } else {
-            mp3->loop(); // Continue playback
         }
-    } 
+    }
 }
 
 
@@ -84,6 +87,8 @@ void stopMP3Playback() {
         file = nullptr;
     }
 
-    playbackStartTime = 0; // Reset timer
+    // We do not delete 'out' here — we keep the I2S peripheral alive for future plays
+
+    playbackStartTime = 0; // Reset the timer
     Serial.println("MP3 playback stopped.");
-}   
+}
