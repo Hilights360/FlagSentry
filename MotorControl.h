@@ -1,37 +1,36 @@
 #pragma once
 
 #include <Arduino.h>
+#include "flagpos.h"
 
-// Motor driver pins
-#define ENA_PIN 25
-#define IN1_PIN 32
-#define IN2_PIN 33
+// === Motor Control Pins ===
+#define ENA_PIN 25    // PWM output to motor driver (ENA)
+#define IN1_PIN 32    // Motor driver input 1
+#define IN2_PIN 33    // Motor driver input 2
+#define ESTOP_PIN 26  // Emergency stop input
+#define MAG_SENSOR_PIN 27 // Magnetic sensor input
 
-// Emergency Stop and Magnetic Sensor pins
-#define ESTOP_PIN 26
-#define MAG_SENSOR_PIN 27
+// === Motor Tuning Variables ===
+// *** Added for adjustable soft start control ***
+extern int startPWM;  // Starting PWM value for motor ramp (0-255)
+extern int targetPWM; // Final PWM target speed (0-255)
+extern int rampTime;  // Time to ramp from startPWM to targetPWM (milliseconds)
 
-// Motor Constants
-#define MOTOR_SPEED 255      // Maximum motor speed (PWM duty)
-#define REV_FULL 10          // Full flag position in revolutions
-#define REV_HALF 5           // Half flag position in revolutions
-#define REV_DOWN 0           // Down flag position in revolutions
+// === Flag Position Settings (Adjustable) ===
+// *** Changed from #define to variables for dynamic adjustment ***
+extern int fullPositionRevolutions;  // Number of revolutions for FULL flag
+extern int halfPositionRevolutions;  // Number of revolutions for HALF mast
+extern int downPositionRevolutions;  // Number of revolutions for DOWN
 
-// Motor control functions
+// === Function Declarations ===
 void setupMotor();
 void setMotorForward(uint8_t speed);
 void setMotorReverse(uint8_t speed);
 void stopMotor();
-void checkEStop();
 void moveToPosition(String position);
 void updateMotorMovement();
 void resetMotorPosition();
 int getCurrentPosition();
 bool isMoving();
 String getMotorStatus();
-
-// *** Added for Soft Start ***
-extern int currentPWM;              // Current PWM duty during soft start
-extern int targetPWM;               // Target PWM duty to reach
-extern unsigned long lastPWMUpdate; // Last millis() when PWM was updated
-extern bool softStarting;           // Whether motor is in soft start ramp
+void checkEStop();

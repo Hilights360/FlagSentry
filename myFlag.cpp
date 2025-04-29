@@ -1,6 +1,7 @@
 #include <WiFi.h>   // <-- ADD THIS LINE
 #include "myFlag.h"
 #include "flagpos.h"
+#include <ArduinoJson.h> // <-- Also needed for JSON parsing
 
 
 // Assume `server`, `cachedHTML`, `cachedTimeStr`, etc., are defined as `extern` in Globals.h
@@ -61,7 +62,44 @@ void serveMyFlagHTML(NetworkServer& server,
         client.println("Connection: close");
         client.println();
         client.print(html);
-        Serial.println("HTML page served to client.");
+        Serial.println("myFlag page served to client.");
         client.stop();
+    }
+}
+void handleSetFlagPosition() {
+    if (server.hasArg("plain") == false) {
+        server.send(400, "text/plain", "Bad Request: Body Missing");
+        return;
+    }
+
+    String body = server.arg("plain");
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, body);
+
+    if (error) {
+        server.send(400, "text/plain", "Bad Request: Invalid JSON");
+        return;
+    }
+
+    String incomingPosition = doc["position"];
+
+    if (incomingPosition == "Full") {
+        setFlagPosition(FULL);
+        server.send(200, "text/plain", "Flag set to Full");
+    }
+    else if (incomingPosition == "Half") {
+        setFlagPosition(HALF);
+        server.send(200, "text/plain", "Flag set to Half");
+    }
+    else if (incomingPosition == "Down") {
+        setFlagPosition(DOWN);
+        server.send(200, "text/plain", "Flag set to Down");
+    }
+    else if (incomingPosition == "Auto") {
+        setFlagPosition(AUTO);  // Auto mode - you must define this behavior
+        server.send(200, "text/plain", "Flag set to Auto Mode");
+    }
+    else {
+        server.send(400, "text/plain", "Invalid flag position received");
     }
 }

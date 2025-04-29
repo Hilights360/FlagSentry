@@ -5,8 +5,10 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "flagpos.h"
+#include <WebServer.h>
 
-extern WiFiServer server;
+extern WebServer server;
+
 
 // Shared device identity
 extern String deviceSerial;

@@ -6,6 +6,8 @@ Updates 4/23/25*/
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WebServer.h>  // <-- Add this
+#include <ArduinoJson.h> // <-- Also needed for JSON parsing
 #include <HTTPClient.h>
 #include <SPI.h>
 #include <SD.h>
@@ -20,7 +22,9 @@ Updates 4/23/25*/
 
 
 // WIFI Server Port
-WiFiServer server(80);
+//WiFiServer server(80);
+WebServer server(80);    // <-- Correct declaration
+
 
 #ifndef NDEBUG
 #define NDEBUG
@@ -89,15 +93,15 @@ String cachedTimeStr = "";
 
 // === Function Declarations ===
 String getESP32SerialNumber();
+String getFormattedTime();
 void updateSensorData();
-//void serveMyFlagHTML();
 void timedUpdates();
 void checkHttpflagStatus();
-String getFormattedTime();
 void logToSDCard();
 void sendSensorData();
 void debugSerial();
 void handleFlagPositionUpdates();
+//void serveMyFlagHTML();
 
 // --- Persistence Functions ---
 FlagPosition readLastFlagPos() {
@@ -286,12 +290,10 @@ void loop() {
     updateSensorData();
     handleFlagPositionUpdates();
    
-    //handleMP3Playback();
-    if (mp3 && mp3->isRunning()){
+   if (mp3 && mp3->isRunning()){
            // Serial.println("MP3 is playing, deferring SD card logging."); 
             handleMP3Playback();
-            
-            
+                     
         } else {
             serveMyFlagHTML(server,
                     cachedHTML,
@@ -325,17 +327,17 @@ void handleMP3Command(const String& command) {
 
         Serial.println("Attempting to find file: [" + fileName + "]");
         if (SD.exists(fileName.c_str())) {
-            Serial.println("✅ handleMP3Command File found! Attempting to play...");
+            Serial.println("✅ File found! Attempting to play...");
         } else {
-            Serial.println("❌ handleMP3Command File not found on SD card: " + fileName);
+            Serial.println("❌ File not found on SD card: " + fileName);
             listFiles();  // Show what *is* on SD
         }
 
         if (!playMP3File(fileName.c_str())) {
-            Serial.println("❌ handleMP3Command Failed to play the MP3 file.");
+            Serial.println("❌ Failed to play the MP3 file.");
         }
     } else {
-        Serial.println("handleMP3Command Invalid MP3 command.");
+        Serial.println("Invalid MP3 command.");
     }
 }
 
@@ -379,7 +381,7 @@ void updateSensorData() {
   cachedTempC = bmp280.readTemperature();
   cachedTempF = cachedTempC * 1.8 + 32;
   cachedPressure = bmp280.readPressure() / 100.0F;
-  cachedLightVal = digitalRead(PHOTOCELL_PIN);     // Read the photocell value
+  cachedLightVal = analogRead(PHOTOCELL_PIN);     // Read the photocell value
   cachedLightCond = (cachedLightVal < 1 ) ? "Light" : "Dark";
 }
 
