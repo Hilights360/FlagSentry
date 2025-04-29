@@ -22,8 +22,8 @@ Updates 4/23/25*/
 
 
 // WIFI Server Port
-//WiFiServer server(80);
-WebServer server(80);    // <-- Correct declaration
+WiFiServer server(80);
+//WebServer server(80);    // <-- Correct declaration
 
 
 #ifndef NDEBUG

@@ -1,7 +1,7 @@
 #ifndef FLAGPOS_H
 #define FLAGPOS_H
 #include <Arduino.h>
-#include "MotorControl.h"
+//#include "MotorControl.h"
 
 // Define possible flag positions as an enum.
 enum FlagPosition {

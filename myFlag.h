@@ -7,12 +7,13 @@
 
 typedef WiFiServer NetworkServer;
 
+
 void setFlagPosition(FlagPosition position);
 
-void serveMyFlagHTML(WebServer& server,
+void serveMyFlagHTML(WiFiServer& server,
                      const String& htmlTemplate,
-                     const String& deviceSerial,
                      const String& timeStr,
+                     const String& deviceSerial,
                      float tempC,
                      float tempF,
                      float pressure,
@@ -20,3 +21,4 @@ void serveMyFlagHTML(WebServer& server,
                      const String& lightCond,
                      FlagPosition flagStatus,
                      const char* (*flagToString)(FlagPosition));
+

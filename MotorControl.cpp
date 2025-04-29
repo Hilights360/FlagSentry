@@ -1,4 +1,5 @@
 #include "MotorControl.h"
+#include "flagpos.h"
 
 // === Motor Control Variables ===
 bool moving = false;
@@ -10,13 +11,11 @@ unsigned long lastPWMUpdate = 0;
 String currentStatus = "Idle";
 
 // === Motor Tuning Settings (Adjustable) ===
-// *** Added for adjustable soft start control ***
 int startPWM = 50;               // Starting PWM value (out of 255)
-int targetPWM = 255;              // Full-speed PWM value
-int rampTime = 1000;              // Ramp time in ms
+int targetPWM = 255;             // Full-speed PWM value
+int rampTime = 1000;             // Ramp time in ms
 
 // === Flag Position Variables ===
-// *** Changed from #define to adjustable variables ***
 int fullPositionRevolutions = 10;  // Default full flag revolutions
 int halfPositionRevolutions = 5;   // Default half mast revolutions
 int downPositionRevolutions = 0;   // Down position revolutions
@@ -33,7 +32,7 @@ void setupMotor() {
     pinMode(ESTOP_PIN, INPUT_PULLUP);
     pinMode(MAG_SENSOR_PIN, INPUT_PULLUP);
 
-    attachInterrupt(digitalPinToInterrupt(MAG_SENSOR_PIN), magnetPulseISR, FALLING); // *** Added interrupt for revolution counting ***
+    attachInterrupt(digitalPinToInterrupt(MAG_SENSOR_PIN), magnetPulseISR, FALLING);
 
     ledcSetup(0, 5000, 8);  // Channel 0, 5kHz, 8-bit resolution
     ledcAttachPin(ENA_PIN, 0);  // Attach ENA pin to PWM Channel 0
@@ -65,12 +64,12 @@ void stopMotor() {
     currentStatus = "Idle";
 }
 
-// === Move to Flag Position ===
+// === Move to Flag Position by String ===
 void moveToPosition(String position) {
     resetMotorPosition();
     moving = true;
     softStarting = true;
-    currentPWM = startPWM; // *** Start from configured start PWM ***
+    currentPWM = startPWM;
 
     if (position == "FULL") {
         targetRevolutions = fullPositionRevolutions;
@@ -82,6 +81,7 @@ void moveToPosition(String position) {
         targetRevolutions = downPositionRevolutions;
         setMotorReverse(currentPWM);
     }
+
     currentStatus = "Moving " + position;
 }
 
@@ -92,10 +92,10 @@ void updateMotorMovement() {
     // === Soft Start PWM Ramping ===
     if (softStarting) {
         unsigned long now = millis();
-        if (now - lastPWMUpdate >= 10) { // Update every 10ms
+        if (now - lastPWMUpdate >= 10) {
             lastPWMUpdate = now;
-            int pwmStep = (targetPWM - startPWM) * 10 / rampTime; // *** Auto calculate step based on ramp time ***
-            if (pwmStep < 1) pwmStep = 1; // Minimum step of 1 to avoid freezing
+            int pwmStep = (targetPWM - startPWM) * 10 / rampTime;
+            if (pwmStep < 1) pwmStep = 1;
             currentPWM += pwmStep;
             if (currentPWM >= targetPWM) {
                 currentPWM = targetPWM;
@@ -137,4 +137,38 @@ void checkEStop() {
         stopMotor();
         Serial.println("Emergency Stop Triggered!");
     }
+}
+
+// === Smart Flag Control ===
+
+static FlagPosition lastCommandedPosition = FLAG_UNKNOWN;
+
+String flagPositionToString(FlagPosition pos) {
+    switch (pos) {
+        case FLAG_FULL: return "FULL";
+        case FLAG_HALF: return "HALF";
+        case FLAG_DOWN: return "DOWN";
+        case FLAG_STOW: return "STOW"; // Add if implemented
+        case FLAG_AUTO: return "AUTO";
+        default:        return "UNKNOWN";
+    }
+}
+
+void setFlagPosition(FlagPosition position) {
+    if (position == lastCommandedPosition) {
+        Serial.println("Flag already at requested position, no movement.");
+        return;
+    }
+
+    if (position == FLAG_AUTO) {
+        Serial.println("Flag set to AUTO mode. No direct movement triggered.");
+        lastCommandedPosition = position;
+        return;
+    }
+
+    String posStr = flagPositionToString(position);
+    Serial.print("Setting flag position to ");
+    Serial.println(posStr);
+    moveToPosition(posStr);
+    lastCommandedPosition = position;
 }

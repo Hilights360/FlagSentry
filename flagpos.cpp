@@ -1,4 +1,5 @@
 #include "flagpos.h"
+#include "MotorControl.h" 
 
 // Initialize global variables.
 FlagPosition currentFlagStatus = FLAG_UNKNOWN;

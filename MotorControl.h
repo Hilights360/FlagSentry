@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "flagpos.h"
+enum FlagPosition;
 
 // === Motor Control Pins ===
 #define ENA_PIN 25    // PWM output to motor driver (ENA)
@@ -34,3 +35,6 @@ int getCurrentPosition();
 bool isMoving();
 String getMotorStatus();
 void checkEStop();
+void setFlagPosition(FlagPosition position);
+
+void setFlagPosition(FlagPosition position);

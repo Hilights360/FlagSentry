@@ -7,7 +7,7 @@
 #include "flagpos.h"
 #include <WebServer.h>
 
-extern WebServer server;
+extern WiFiServer server;
 
 
 // Shared device identity
